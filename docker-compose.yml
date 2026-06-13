@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cloth
+      POSTGRES_PASSWORD: cloth_secret
+      POSTGRES_DB: cloth_portfolio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloth -d cloth_portfolio"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  portfolio-service:
+    build: ./services/portfolio
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://cloth:cloth_secret@postgres:5432/cloth_portfolio
+      UPLOAD_DIR: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth-service:
+    build: ./services/auth
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://cloth:cloth_secret@postgres:5432/cloth_portfolio
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@portfolio.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    build: ./services/gateway
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      PORTFOLIO_URL: http://portfolio-service:3001
+      AUTH_URL: http://auth-service:3002
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+    depends_on:
+      - portfolio-service
+      - auth-service
+
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://gateway:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_MEDIA_URL: http://localhost:4000
+    depends_on:
+      - gateway
+
+  admin:
+    build: ./apps/admin
+    ports:
+      - "3003:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_MEDIA_URL: http://localhost:4000
+    depends_on:
+      - gateway
+
+volumes:
+  postgres_data:
+  uploads_data:

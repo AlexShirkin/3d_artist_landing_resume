@@ -1,0 +1,17 @@
+{
+  "name": "cloth-resume-landing",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "docker compose up --build",
+    "dev:local": "concurrently -n gateway,portfolio,auth,web,admin -c blue,green,yellow,magenta,cyan \"npm run dev -w @cloth/gateway\" \"npm run dev -w @cloth/portfolio-service\" \"npm run dev -w @cloth/auth-service\" \"npm run dev -w @cloth/web\" \"npm run dev -w @cloth/admin\"",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
