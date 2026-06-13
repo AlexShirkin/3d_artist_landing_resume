@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { pool, mapItem, type PortfolioRow, type SettingsRow } from "./db.js";
+import { ensureBrowserCompatibleVideo, isVideoFile } from "./video.js";
 
 const PORT = Number(process.env.PORT) || 3001;
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
@@ -130,10 +131,23 @@ app.post("/upload", async (req, reply) => {
   const data = await req.file();
   if (!data) return reply.status(400).send({ error: "No file" });
   const ext = path.extname(data.filename) || ".bin";
-  const filename = `${randomUUID()}${ext}`;
-  const filepath = path.join(UPLOAD_DIR, filename);
+  let filename = `${randomUUID()}${ext}`;
+  let filepath = path.join(UPLOAD_DIR, filename);
   const buffer = await data.toBuffer();
   await writeFile(filepath, buffer);
+
+  if (isVideoFile(filename)) {
+    try {
+      filepath = await ensureBrowserCompatibleVideo(filepath);
+      filename = path.basename(filepath);
+    } catch (err) {
+      req.log.error(err, "Video transcode failed");
+      return reply.status(422).send({
+        error: "Unsupported video format. Use MP4 (H.264) or WebM.",
+      });
+    }
+  }
+
   return { url: `/uploads/${filename}`, filename };
 });
 

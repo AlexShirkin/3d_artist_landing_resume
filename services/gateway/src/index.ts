@@ -23,6 +23,13 @@ function verifyToken(auth?: string): boolean {
 
 app.get("/health", async () => ({ status: "ok", service: "gateway" }));
 
+// Static uploads (videos, images)
+await app.register(proxy, {
+  upstream: PORTFOLIO_URL,
+  prefix: "/uploads",
+  rewritePrefix: "/uploads",
+});
+
 // Public read-only portfolio API
 await app.register(proxy, {
   upstream: PORTFOLIO_URL,

@@ -44,7 +44,8 @@ export interface SiteSettings {
 
 export function mediaSrc(url: string): string {
   if (url.startsWith("http")) return url;
-  return `${MEDIA_URL}${url}`;
+  // Same-origin via /uploads route handler (supports range requests for video)
+  return url.startsWith("/") ? url : `/${url}`;
 }
 
 export async function fetchItems(params?: {
