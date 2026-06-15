@@ -92,7 +92,7 @@ cd apps/web && npm run dev
 cd apps/admin && npm run dev
 ```
 
-Переменные: `NEXT_PUBLIC_API_URL=http://localhost:4000`
+Переменные: `API_URL=http://localhost:4000` (в каждом `apps/web` и `apps/admin` через `.env.local`)
 
 ## Админка
 
@@ -116,3 +116,4 @@ infra/init.sql    — схема БД
 - Задайте сильные `JWT_SECRET` и `ADMIN_PASSWORD`
 - Подключите домен и HTTPS (nginx / Cloudflare)
 - Медиа хранятся в volume `uploads_data` — настройте бэкапы
+- **URL API настраивать не нужно** — браузер ходит на `/api/...` того же хоста, Next.js проксирует на `gateway` внутри Docker-сети

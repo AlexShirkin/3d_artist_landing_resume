@@ -1,14 +1,5 @@
-// Сервер (Docker): API_URL=http://gateway:4000
-// Браузер: NEXT_PUBLIC_API_URL=http://localhost:4000
-const API_URL =
-  process.env.API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4000";
-
-export const MEDIA_URL =
-  process.env.NEXT_PUBLIC_MEDIA_URL ||
-  process.env.API_URL ||
-  "http://localhost:4000";
+// Server-side fetch goes directly to gateway inside Docker network
+const API_URL = process.env.API_URL || "http://gateway:4000";
 
 async function apiFetch<T>(url: string, fallback: T): Promise<T> {
   try {

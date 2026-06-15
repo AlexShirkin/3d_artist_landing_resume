@@ -1,5 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-export const MEDIA_URL = process.env.NEXT_PUBLIC_MEDIA_URL || API_URL;
+// Same-origin: Next.js proxies /api and /uploads to gateway (see next.config.ts)
+const API_URL = "";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -136,5 +136,5 @@ export async function updateSettings(data: Partial<SiteSettings>) {
 
 export function mediaSrc(url: string) {
   if (url.startsWith("http")) return url;
-  return `${MEDIA_URL}${url}`;
+  return url.startsWith("/") ? url : `/${url}`;
 }

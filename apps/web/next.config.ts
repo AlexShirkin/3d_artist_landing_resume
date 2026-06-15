@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
 
+const gatewayUrl = process.env.API_URL || "http://gateway:4000";
+
 const nextConfig: NextConfig = {
   output: "standalone",
-  images: {
-    remotePatterns: [{ protocol: "http", hostname: "localhost", port: "4000" }],
+  async rewrites() {
+    return [
+      { source: "/uploads/:path*", destination: `${gatewayUrl}/uploads/:path*` },
+    ];
   },
 };
 
