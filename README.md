@@ -109,11 +109,84 @@ services/portfolio— CRUD + uploads
 services/auth     — авторизация админа
 packages/shared   — общие типы
 infra/init.sql    — схема БД
+infra/nginx/      — nginx reverse proxy (production)
+infra/init-letsencrypt.sh — первичная выдача SSL
 ```
 
-## Продакшен
+## Продакшен (nginx + HTTPS)
+
+### 1. DNS
+
+Направьте A-записи на IP сервера:
+
+| Запись | Пример |
+|--------|--------|
+| `DOMAIN` | `portfolio.example.com` → IP сервера |
+| `ADMIN_DOMAIN` | `admin.portfolio.example.com` → IP сервера |
+
+### 2. Настройка `.env`
+
+```bash
+cp .env.example .env
+```
+
+Заполните:
+
+```env
+JWT_SECRET=длинная-случайная-строка
+ADMIN_PASSWORD=надёжный-пароль
+DOMAIN=portfolio.example.com
+ADMIN_DOMAIN=admin.portfolio.example.com
+CERTBOT_EMAIL=you@example.com
+CERTBOT_STAGING=0
+```
+
+Для первого теста можно `CERTBOT_STAGING=1` — Let's Encrypt выдаст тестовый сертификат (без лимитов).
+
+### 3. Запуск с SSL
+
+На сервере откройте порты **80** и **443** в firewall.
+
+```bash
+chmod +x infra/init-letsencrypt.sh infra/renew-certs.sh
+./infra/init-letsencrypt.sh
+```
+
+Скрипт:
+1. Поднимает все сервисы
+2. Запрашивает сертификат Let's Encrypt (оба домена в одном сертификате)
+3. Включает HTTPS в nginx
+4. Запускает автообновление сертификата
+
+| Сервис | URL |
+|--------|-----|
+| Лендинг | `https://ваш-домен` |
+| Админка | `https://admin.ваш-домен` |
+
+Снаружи открыты только порты **80** и **443**. Порты 3000, 3003, 4000, 5432 закрыты.
+
+### 4. Обновление сертификата
+
+Certbot-контейнер проверяет продление каждые 12 часов. Для перезагрузки nginx после обновления добавьте в cron:
+
+```bash
+0 3 * * * /path/to/project/infra/renew-certs.sh >> /var/log/cloth-cert-renew.log 2>&1
+```
+
+### Архитектура
+
+```
+Интернет :443
+    │
+    ▼
+  nginx ──► web:3000      (DOMAIN)
+         └──► admin:3000  (ADMIN_DOMAIN)
+```
+
+API (`/api/...`) и медиа (`/uploads/...`) проксируются через Next.js внутри Docker — отдельный домен для API не нужен.
+
+### Прочее
 
 - Задайте сильные `JWT_SECRET` и `ADMIN_PASSWORD`
-- Подключите домен и HTTPS (nginx / Cloudflare)
 - Медиа хранятся в volume `uploads_data` — настройте бэкапы
-- **URL API настраивать не нужно** — браузер ходит на `/api/...` того же хоста, Next.js проксирует на `gateway` внутри Docker-сети
+- **URL API настраивать не нужно** — браузер ходит на `/api/...` того же хоста
