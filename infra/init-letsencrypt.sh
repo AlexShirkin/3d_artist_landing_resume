@@ -28,8 +28,21 @@ echo "=== 1/4 Starting services (nginx in bootstrap mode) ==="
 $COMPOSE up -d --build
 
 echo "=== 2/4 Requesting SSL certificate ==="
-$COMPOSE run --rm certbot certonly \
+echo "Checking DNS (must point to this server)..."
+SERVER_IP=$(curl -4 -s ifconfig.me || curl -4 -s icanhazip.com || true)
+DOMAIN_IP=$(dig +short "$DOMAIN" A | tail -1)
+ADMIN_IP=$(dig +short "$ADMIN_DOMAIN" A | tail -1)
+echo "  Server IP:  ${SERVER_IP:-unknown}"
+echo "  $DOMAIN -> ${DOMAIN_IP:-not found}"
+echo "  $ADMIN_DOMAIN -> ${ADMIN_IP:-not found}"
+if [ -n "$SERVER_IP" ] && { [ "$DOMAIN_IP" != "$SERVER_IP" ] || [ "$ADMIN_IP" != "$SERVER_IP" ]; }; then
+  echo "WARNING: DNS may not point to this server yet. Certbot might fail or hang."
+fi
+
+$COMPOSE run --rm -T --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
+  --non-interactive \
+  --verbose \
   $STAGING_ARG \
   --email "$CERTBOT_EMAIL" \
   --agree-tos \
