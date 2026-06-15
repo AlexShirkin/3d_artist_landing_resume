@@ -32,9 +32,17 @@ echo "Checking DNS (must point to this server)..."
 SERVER_IP=$(curl -4 -s ifconfig.me || curl -4 -s icanhazip.com || true)
 DOMAIN_IP=$(dig +short "$DOMAIN" A | tail -1)
 ADMIN_IP=$(dig +short "$ADMIN_DOMAIN" A | tail -1)
+DOMAIN_AAAA=$(dig +short "$DOMAIN" AAAA | tail -1)
+ADMIN_AAAA=$(dig +short "$ADMIN_DOMAIN" AAAA | tail -1)
 echo "  Server IP:  ${SERVER_IP:-unknown}"
 echo "  $DOMAIN -> ${DOMAIN_IP:-not found}"
 echo "  $ADMIN_DOMAIN -> ${ADMIN_IP:-not found}"
+if [ -n "$DOMAIN_AAAA" ] || [ -n "$ADMIN_AAAA" ]; then
+  echo "  WARNING: AAAA (IPv6) records found:"
+  [ -n "$DOMAIN_AAAA" ] && echo "    $DOMAIN -> $DOMAIN_AAAA"
+  [ -n "$ADMIN_AAAA" ] && echo "    $ADMIN_DOMAIN -> $ADMIN_AAAA"
+  echo "  Let's Encrypt checks IPv6 first. Delete AAAA in Reg.ru unless IPv6 points to this server."
+fi
 if [ -n "$SERVER_IP" ] && { [ "$DOMAIN_IP" != "$SERVER_IP" ] || [ "$ADMIN_IP" != "$SERVER_IP" ]; }; then
   echo "WARNING: DNS may not point to this server yet. Certbot might fail or hang."
 fi
