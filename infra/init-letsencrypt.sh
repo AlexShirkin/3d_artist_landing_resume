@@ -19,9 +19,14 @@ set +a
 
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 STAGING_ARG=""
+FORCE_ARG=""
 if [ "${CERTBOT_STAGING:-0}" = "1" ]; then
   STAGING_ARG="--staging"
-  echo "Using Let's Encrypt STAGING (test certificates)"
+  echo "Using Let's Encrypt STAGING (test certificates — browser will show 'not secure')"
+fi
+if [ "${CERTBOT_FORCE_RENEW:-0}" = "1" ]; then
+  FORCE_ARG="--force-renewal"
+  echo "Force renewal enabled (re-issue certificate)"
 fi
 
 echo "=== 1/4 Starting services (nginx in bootstrap mode) ==="
@@ -52,6 +57,7 @@ $COMPOSE run --rm -T --entrypoint certbot certbot certonly \
   --non-interactive \
   --verbose \
   $STAGING_ARG \
+  $FORCE_ARG \
   --email "$CERTBOT_EMAIL" \
   --agree-tos \
   --no-eff-email \
