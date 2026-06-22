@@ -52,6 +52,8 @@ export interface SiteSettings {
   telegram: string;
   instagram: string;
   yearsExperience: number;
+  heroLabel: string;
+  competencies: string[];
 }
 
 export async function fetchItems(): Promise<PortfolioItem[]> {

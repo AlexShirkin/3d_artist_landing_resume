@@ -6,9 +6,10 @@ interface HeroProps {
   name: string;
   tagline: string;
   years: number;
+  heroLabel: string;
 }
 
-export function Hero({ name, tagline, years }: HeroProps) {
+export function Hero({ name, tagline, years, heroLabel }: HeroProps) {
   return (
     <section className="hero-glow relative flex min-h-screen flex-col justify-end overflow-hidden pb-24 pt-32">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-ink/20 to-ink" />
@@ -19,7 +20,7 @@ export function Hero({ name, tagline, years }: HeroProps) {
           transition={{ duration: 0.8 }}
           className="mb-6 text-xs uppercase tracking-[0.35em] text-gold"
         >
-          3D-конструктор одежды · {years}+ лет опыта
+          {heroLabel} · {years}+ лет опыта
         </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 30 }}

@@ -31,6 +31,8 @@ export interface SiteSettings {
   telegram: string;
   instagram: string;
   yearsExperience: number;
+  heroLabel: string;
+  competencies: string[];
 }
 
 export function mediaSrc(url: string): string {

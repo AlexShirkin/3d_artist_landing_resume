@@ -5,13 +5,14 @@ import fastifyStatic from "@fastify/static";
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { pool, mapItem, type PortfolioRow, type SettingsRow } from "./db.js";
+import { pool, mapItem, mapSettings, ensureSchema, type PortfolioRow, type SettingsRow } from "./db.js";
 import { ensureBrowserCompatibleVideo, isVideoFile } from "./video.js";
 
 const PORT = Number(process.env.PORT) || 3001;
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
 
 await mkdir(UPLOAD_DIR, { recursive: true });
+await ensureSchema();
 
 const app = Fastify({ logger: true });
 
@@ -154,15 +155,8 @@ app.post("/upload", async (req, reply) => {
 app.get("/settings", async () => {
   const { rows } = await pool.query<SettingsRow>("SELECT * FROM site_settings WHERE id = 1");
   const s = rows[0];
-  return {
-    designerName: s.designer_name,
-    tagline: s.tagline,
-    bio: s.bio,
-    email: s.email,
-    telegram: s.telegram,
-    instagram: s.instagram,
-    yearsExperience: s.years_experience,
-  };
+  if (!s) return {};
+  return mapSettings(s);
 });
 
 app.put("/settings", async (req, reply) => {
@@ -174,12 +168,23 @@ app.put("/settings", async (req, reply) => {
     telegram: string;
     instagram: string;
     yearsExperience: number;
+    heroLabel: string;
+    competencies: string[];
   }>;
 
   const years =
     typeof body.yearsExperience === "number" && Number.isFinite(body.yearsExperience)
       ? Math.round(body.yearsExperience)
       : null;
+
+  const competencies =
+    body.competencies === undefined
+      ? null
+      : JSON.stringify(
+          body.competencies
+            .map((item) => item.trim())
+            .filter(Boolean)
+        );
 
   try {
     const { rows } = await pool.query<SettingsRow>(
@@ -190,7 +195,9 @@ app.put("/settings", async (req, reply) => {
         email = COALESCE($4, email),
         telegram = COALESCE($5, telegram),
         instagram = COALESCE($6, instagram),
-        years_experience = COALESCE($7, years_experience)
+        years_experience = COALESCE($7, years_experience),
+        hero_label = COALESCE($8, hero_label),
+        competencies = COALESCE($9::jsonb, competencies)
        WHERE id = 1 RETURNING *`,
       [
         body.designerName ?? null,
@@ -200,21 +207,15 @@ app.put("/settings", async (req, reply) => {
         body.telegram ?? null,
         body.instagram ?? null,
         years,
+        body.heroLabel ?? null,
+        competencies,
       ]
     );
     const s = rows[0];
     if (!s) {
       return reply.status(404).send({ error: "Settings row not found" });
     }
-    return {
-      designerName: s.designer_name,
-      tagline: s.tagline,
-      bio: s.bio,
-      email: s.email,
-      telegram: s.telegram,
-      instagram: s.instagram,
-      yearsExperience: s.years_experience,
-    };
+    return mapSettings(s);
   } catch (err) {
     req.log.error(err, "Failed to update settings");
     return reply.status(500).send({ error: "Failed to update settings" });

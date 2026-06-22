@@ -20,7 +20,15 @@ CREATE TABLE IF NOT EXISTS site_settings (
   email VARCHAR(255) NOT NULL DEFAULT '',
   telegram VARCHAR(255) NOT NULL DEFAULT '',
   instagram VARCHAR(255) NOT NULL DEFAULT '',
-  years_experience INTEGER NOT NULL DEFAULT 5
+  years_experience INTEGER NOT NULL DEFAULT 5,
+  hero_label VARCHAR(255) NOT NULL DEFAULT '3D-конструктор одежды',
+  competencies JSONB NOT NULL DEFAULT '[
+    "3D-конструирование и лекала",
+    "Симуляция ткани (draping)",
+    "Технические пакеты для производства",
+    "Визуализация и рендер коллекций",
+    "Работа с брендами и ателье"
+  ]'::jsonb
 );
 
 INSERT INTO site_settings (id) VALUES (1) ON CONFLICT DO NOTHING;

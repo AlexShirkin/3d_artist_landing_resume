@@ -25,6 +25,14 @@ export default async function HomePage() {
     telegram: "",
     instagram: "",
     yearsExperience: 8,
+    heroLabel: "3D-конструктор одежды",
+    competencies: [
+      "3D-конструирование и лекала",
+      "Симуляция ткани (draping)",
+      "Технические пакеты для производства",
+      "Визуализация и рендер коллекций",
+      "Работа с брендами и ателье",
+    ],
   };
 
   const showcase = featured.length > 0 ? featured : items;
@@ -36,6 +44,7 @@ export default async function HomePage() {
         name={s.designerName}
         tagline={s.tagline}
         years={s.yearsExperience}
+        heroLabel={s.heroLabel}
       />
       <PortfolioGrid
         items={showcase}
@@ -48,7 +57,11 @@ export default async function HomePage() {
           title="Все проекты"
         />
       )}
-      <About bio={s.bio} years={s.yearsExperience} />
+      <About
+        bio={s.bio}
+        years={s.yearsExperience}
+        competencies={s.competencies}
+      />
       <Contact
         email={s.email}
         telegram={s.telegram}

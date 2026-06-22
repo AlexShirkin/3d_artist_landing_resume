@@ -41,4 +41,6 @@ export interface SiteSettings {
   telegram: string;
   instagram: string;
   yearsExperience: number;
+  heroLabel: string;
+  competencies: string[];
 }

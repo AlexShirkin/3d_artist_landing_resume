@@ -6,6 +6,14 @@ const pool = new pg.Pool({
     "postgresql://cloth:cloth_secret@localhost:5432/cloth_portfolio",
 });
 
+export const DEFAULT_COMPETENCIES = [
+  "3D-конструирование и лекала",
+  "Симуляция ткани (draping)",
+  "Технические пакеты для производства",
+  "Визуализация и рендер коллекций",
+  "Работа с брендами и ателье",
+];
+
 export interface PortfolioRow {
   id: string;
   title: string;
@@ -28,6 +36,8 @@ export interface SettingsRow {
   telegram: string;
   instagram: string;
   years_experience: number;
+  hero_label: string;
+  competencies: string[];
 }
 
 export function mapItem(row: PortfolioRow) {
@@ -44,6 +54,41 @@ export function mapItem(row: PortfolioRow) {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
+}
+
+export function mapSettings(row: SettingsRow) {
+  const competencies = Array.isArray(row.competencies)
+    ? row.competencies.filter((item) => typeof item === "string")
+    : [];
+
+  return {
+    designerName: row.designer_name,
+    tagline: row.tagline,
+    bio: row.bio,
+    email: row.email,
+    telegram: row.telegram,
+    instagram: row.instagram,
+    yearsExperience: row.years_experience,
+    heroLabel: row.hero_label,
+    competencies:
+      competencies.length > 0 ? competencies : [...DEFAULT_COMPETENCIES],
+  };
+}
+
+export async function ensureSchema() {
+  await pool.query(`
+    ALTER TABLE site_settings
+      ADD COLUMN IF NOT EXISTS hero_label VARCHAR(255) NOT NULL DEFAULT '3D-конструктор одежды';
+    ALTER TABLE site_settings
+      ADD COLUMN IF NOT EXISTS competencies JSONB NOT NULL DEFAULT '[]'::jsonb;
+  `);
+
+  await pool.query(
+    `UPDATE site_settings
+     SET competencies = $1::jsonb
+     WHERE id = 1 AND competencies = '[]'::jsonb`,
+    [JSON.stringify(DEFAULT_COMPETENCIES)]
+  );
 }
 
 export { pool };
