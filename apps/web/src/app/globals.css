@@ -42,8 +42,19 @@ body {
     radial-gradient(ellipse 40% 30% at 90% 20%, color-mix(in srgb, var(--color-rose) 12%, transparent), transparent);
 }
 
-.portfolio-card:hover .portfolio-overlay {
+.portfolio-card:hover .portfolio-overlay,
+.portfolio-overlay.portfolio-overlay--visible {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.portfolio-overlay {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.portfolio-card--expanded .portfolio-media {
+  transform: scale(1);
 }
 
 .portfolio-card:hover .portfolio-media {
