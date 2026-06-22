@@ -165,8 +165,8 @@ app.get("/settings", async () => {
   };
 });
 
-app.put("/settings", async (req) => {
-  const body = req.body as Partial<{
+app.put("/settings", async (req, reply) => {
+  const body = (req.body ?? {}) as Partial<{
     designerName: string;
     tagline: string;
     bio: string;
@@ -175,37 +175,50 @@ app.put("/settings", async (req) => {
     instagram: string;
     yearsExperience: number;
   }>;
-  const { rows } = await pool.query<SettingsRow>(
-    `UPDATE site_settings SET
-      designer_name = COALESCE($2, designer_name),
-      tagline = COALESCE($3, tagline),
-      bio = COALESCE($4, bio),
-      email = COALESCE($5, email),
-      telegram = COALESCE($6, telegram),
-      instagram = COALESCE($7, instagram),
-      years_experience = COALESCE($8, years_experience)
-     WHERE id = 1 RETURNING *`,
-    [
-      1,
-      body.designerName,
-      body.tagline,
-      body.bio,
-      body.email,
-      body.telegram,
-      body.instagram,
-      body.yearsExperience,
-    ]
-  );
-  const s = rows[0];
-  return {
-    designerName: s.designer_name,
-    tagline: s.tagline,
-    bio: s.bio,
-    email: s.email,
-    telegram: s.telegram,
-    instagram: s.instagram,
-    yearsExperience: s.years_experience,
-  };
+
+  const years =
+    typeof body.yearsExperience === "number" && Number.isFinite(body.yearsExperience)
+      ? Math.round(body.yearsExperience)
+      : null;
+
+  try {
+    const { rows } = await pool.query<SettingsRow>(
+      `UPDATE site_settings SET
+        designer_name = COALESCE($1, designer_name),
+        tagline = COALESCE($2, tagline),
+        bio = COALESCE($3, bio),
+        email = COALESCE($4, email),
+        telegram = COALESCE($5, telegram),
+        instagram = COALESCE($6, instagram),
+        years_experience = COALESCE($7, years_experience)
+       WHERE id = 1 RETURNING *`,
+      [
+        body.designerName ?? null,
+        body.tagline ?? null,
+        body.bio ?? null,
+        body.email ?? null,
+        body.telegram ?? null,
+        body.instagram ?? null,
+        years,
+      ]
+    );
+    const s = rows[0];
+    if (!s) {
+      return reply.status(404).send({ error: "Settings row not found" });
+    }
+    return {
+      designerName: s.designer_name,
+      tagline: s.tagline,
+      bio: s.bio,
+      email: s.email,
+      telegram: s.telegram,
+      instagram: s.instagram,
+      yearsExperience: s.years_experience,
+    };
+  } catch (err) {
+    req.log.error(err, "Failed to update settings");
+    return reply.status(500).send({ error: "Failed to update settings" });
+  }
 });
 
 app.get("/categories", async () => {
