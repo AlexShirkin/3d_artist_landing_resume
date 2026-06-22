@@ -14,11 +14,12 @@ export function clearToken() {
   localStorage.removeItem("cloth_token");
 }
 
-function authHeaders(): HeadersInit {
+function authHeaders(json = false): HeadersInit {
   const token = getToken();
-  return token
-    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-    : { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (json) headers["Content-Type"] = "application/json";
+  return headers;
 }
 
 export async function login(email: string, password: string) {
@@ -62,7 +63,7 @@ export async function fetchItems(): Promise<PortfolioItem[]> {
 export async function createItem(data: Partial<PortfolioItem> & { title: string; mediaType: string; mediaUrl: string }) {
   const res = await fetch(`${API_URL}/api/admin/items`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify({
       title: data.title,
       description: data.description ?? "",
@@ -81,7 +82,7 @@ export async function createItem(data: Partial<PortfolioItem> & { title: string;
 export async function updateItem(id: string, data: Partial<PortfolioItem>) {
   const res = await fetch(`${API_URL}/api/admin/items/${id}`, {
     method: "PUT",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify({
       title: data.title,
       description: data.description,
@@ -127,7 +128,7 @@ export async function fetchSettings(): Promise<SiteSettings> {
 export async function updateSettings(data: Partial<SiteSettings>) {
   const res = await fetch(`${API_URL}/api/admin/settings`, {
     method: "PUT",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Ошибка сохранения настроек");
