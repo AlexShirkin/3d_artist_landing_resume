@@ -152,8 +152,8 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
     <article
       ref={articleRef}
       className={`portfolio-card group relative overflow-hidden bg-ink-soft ${
-        expanded ? "portfolio-card--expanded z-10" : ""
-      }`}
+        isVideo ? "portfolio-card--video" : ""
+      } ${expanded ? "portfolio-card--expanded z-10" : ""}`}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onClick={handleCardClick}
@@ -196,10 +196,12 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
           />
         )}
         <div
-          className={`portfolio-overlay absolute inset-0 z-[2] flex flex-col bg-gradient-to-t from-ink via-ink/55 to-transparent p-6 transition duration-500 ${
+          className={`portfolio-overlay absolute inset-0 z-[2] flex flex-col p-6 transition duration-500 ${
             expanded
-              ? "justify-between overflow-hidden bg-ink/92 from-ink via-ink/95 to-ink/85"
-              : "justify-end"
+              ? "justify-between overflow-hidden bg-gradient-to-t bg-ink/92 from-ink via-ink/95 to-ink/85"
+              : isVideo
+                ? "portfolio-overlay--video justify-end"
+                : "justify-end bg-gradient-to-t from-ink via-ink/55 to-transparent"
           } ${showOverlay ? "portfolio-overlay--visible" : ""}`}
         >
           <div className={expanded ? "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" : ""}>
