@@ -93,6 +93,12 @@ app.put("/items/:id", async (req, reply) => {
     featured: boolean;
     sortOrder: number;
   }>;
+
+  const thumbnailUrl =
+    body.thumbnailUrl === undefined
+      ? undefined
+      : body.thumbnailUrl || null;
+
   const { rows } = await pool.query<PortfolioRow>(
     `UPDATE portfolio_items SET
       title = COALESCE($2, title),
@@ -100,7 +106,7 @@ app.put("/items/:id", async (req, reply) => {
       category = COALESCE($4, category),
       media_type = COALESCE($5, media_type),
       media_url = COALESCE($6, media_url),
-      thumbnail_url = COALESCE($7, thumbnail_url),
+      thumbnail_url = CASE WHEN $10 THEN $7 ELSE thumbnail_url END,
       featured = COALESCE($8, featured),
       sort_order = COALESCE($9, sort_order),
       updated_at = NOW()
@@ -112,9 +118,10 @@ app.put("/items/:id", async (req, reply) => {
       body.category,
       body.mediaType,
       body.mediaUrl,
-      body.thumbnailUrl,
+      thumbnailUrl,
       body.featured,
       body.sortOrder,
+      thumbnailUrl !== undefined,
     ]
   );
   if (!rows[0]) return reply.status(404).send({ error: "Not found" });

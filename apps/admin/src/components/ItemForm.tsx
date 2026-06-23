@@ -5,6 +5,7 @@ import {
   createItem,
   updateItem,
   uploadFile,
+  mediaSrc,
   type PortfolioItem,
 } from "@/lib/api";
 
@@ -22,9 +23,11 @@ export function ItemForm({ item, onSaved, onCancel }: ItemFormProps) {
     item?.mediaType ?? "video"
   );
   const [mediaUrl, setMediaUrl] = useState(item?.mediaUrl ?? "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(item?.thumbnailUrl ?? "");
   const [featured, setFeatured] = useState(item?.featured ?? false);
   const [sortOrder, setSortOrder] = useState(item?.sortOrder ?? 0);
   const [uploading, setUploading] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -47,6 +50,21 @@ export function ItemForm({ item, onSaved, onCancel }: ItemFormProps) {
     }
   }
 
+  async function handleThumbnailFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumbnail(true);
+    setError("");
+    try {
+      const { url } = await uploadFile(file);
+      setThumbnailUrl(url);
+    } catch {
+      setError("Не удалось загрузить превью");
+    } finally {
+      setUploadingThumbnail(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!mediaUrl) {
@@ -56,26 +74,21 @@ export function ItemForm({ item, onSaved, onCancel }: ItemFormProps) {
     setSaving(true);
     setError("");
     try {
+      const payload = {
+        title,
+        description,
+        category,
+        mediaType,
+        mediaUrl,
+        thumbnailUrl: mediaType === "video" ? thumbnailUrl || null : null,
+        featured,
+        sortOrder,
+      };
+
       if (item) {
-        await updateItem(item.id, {
-          title,
-          description,
-          category,
-          mediaType,
-          mediaUrl,
-          featured,
-          sortOrder,
-        });
+        await updateItem(item.id, payload);
       } else {
-        await createItem({
-          title,
-          description,
-          category,
-          mediaType,
-          mediaUrl,
-          featured,
-          sortOrder,
-        });
+        await createItem(payload);
       }
       onSaved();
     } catch {
@@ -123,7 +136,11 @@ export function ItemForm({ item, onSaved, onCancel }: ItemFormProps) {
           <label className="mb-1 block text-xs text-muted">Тип медиа</label>
           <select
             value={mediaType}
-            onChange={(e) => setMediaType(e.target.value as "video" | "gif" | "image")}
+            onChange={(e) => {
+              const next = e.target.value as "video" | "gif" | "image";
+              setMediaType(next);
+              if (next !== "video") setThumbnailUrl("");
+            }}
             className="w-full rounded px-3 py-2"
           >
             <option value="video">Видео</option>
@@ -160,6 +177,42 @@ export function ItemForm({ item, onSaved, onCancel }: ItemFormProps) {
           <p className="mt-1 text-xs text-accent truncate">{mediaUrl}</p>
         )}
       </div>
+      {mediaType === "video" && (
+        <div className="rounded-lg border border-border bg-bg/40 p-4">
+          <label className="mb-1 block text-xs text-muted">
+            Превью для видео (картинка)
+          </label>
+          <p className="mb-3 text-xs text-muted">
+            Показывается на лендинге до воспроизведения. Рекомендуется 3:4, JPG или PNG.
+          </p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleThumbnailFile}
+          />
+          {uploadingThumbnail && (
+            <p className="mt-1 text-sm text-muted">Загрузка превью…</p>
+          )}
+          {thumbnailUrl && (
+            <div className="mt-3 flex items-start gap-4">
+              <div className="h-28 w-20 overflow-hidden rounded border border-border">
+                <img
+                  src={mediaSrc(thumbnailUrl)}
+                  alt="Превью"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setThumbnailUrl("")}
+                className="rounded border border-border px-3 py-2 text-sm text-muted hover:text-text"
+              >
+                Убрать превью
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex gap-3 pt-2">
         <button
           type="submit"

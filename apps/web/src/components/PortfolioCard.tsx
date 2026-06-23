@@ -9,13 +9,35 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
   const [expanded, setExpanded] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
+  const [loadVideo, setLoadVideo] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const readyHandlerRef = useRef<(() => void) | null>(null);
   const descRef = useRef<HTMLParagraphElement>(null);
   const src = mediaSrc(item.mediaUrl);
+  const posterSrc = item.thumbnailUrl ? mediaSrc(item.thumbnailUrl) : null;
 
   const showOverlay = expanded || revealed;
   const hasDescription = Boolean(item.description?.trim());
+  const isVideo = item.mediaType === "video";
+  const showPoster = isVideo && posterSrc && !playing;
+
+  useEffect(() => {
+    if (!isVideo) return;
+
+    const node = articleRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setLoadVideo(true);
+      },
+      { rootMargin: "240px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isVideo]);
 
   useEffect(() => {
     const el = descRef.current;
@@ -54,6 +76,9 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
   }, []);
 
   const playVideo = useCallback(() => {
+    if (!isVideo) return;
+    setLoadVideo(true);
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -76,16 +101,9 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
     };
     readyHandlerRef.current = onReady;
     video.addEventListener("canplay", onReady);
-  }, [clearReadyHandler]);
+  }, [clearReadyHandler, isVideo]);
 
-  const handleEnter = () => {
-    if (expanded) return;
-    if (item.mediaType === "video") playVideo();
-  };
-
-  const handleLeave = () => {
-    if (expanded) return;
-    setRevealed(false);
+  const stopVideo = useCallback(() => {
     clearReadyHandler();
     setPlaying(false);
     const video = videoRef.current;
@@ -93,6 +111,17 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
       video.pause();
       video.currentTime = 0;
     }
+  }, [clearReadyHandler]);
+
+  const handleEnter = () => {
+    if (expanded) return;
+    if (isVideo) playVideo();
+  };
+
+  const handleLeave = () => {
+    if (expanded) return;
+    setRevealed(false);
+    if (isVideo) stopVideo();
   };
 
   const handleCardClick = () => {
@@ -100,6 +129,11 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
     if (window.matchMedia("(hover: none)").matches) {
       setRevealed((value) => !value);
     }
+  };
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playVideo();
   };
 
   const handleExpand = (e: React.MouseEvent) => {
@@ -116,6 +150,7 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
 
   return (
     <article
+      ref={articleRef}
       className={`portfolio-card group relative overflow-hidden bg-ink-soft ${
         expanded ? "portfolio-card--expanded z-10" : ""
       }`}
@@ -124,19 +159,29 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
       onClick={handleCardClick}
     >
       <div className="relative aspect-[3/4] overflow-hidden">
-        {item.mediaType === "video" ? (
-          <video
-            ref={videoRef}
-            src={src}
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="portfolio-media h-full w-full object-cover transition duration-700 ease-out"
-            poster={item.thumbnailUrl ? mediaSrc(item.thumbnailUrl) : undefined}
-            onPlaying={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-          />
+        {isVideo ? (
+          <>
+            {showPoster && (
+              <img
+                src={posterSrc}
+                alt={item.title}
+                className="absolute inset-0 z-[1] h-full w-full object-cover"
+              />
+            )}
+            <video
+              ref={videoRef}
+              src={loadVideo ? src : undefined}
+              muted
+              loop
+              playsInline
+              preload={loadVideo ? "auto" : "none"}
+              className={`portfolio-media h-full w-full object-cover transition duration-500 ease-out ${
+                playing || !posterSrc ? "opacity-100" : "opacity-0"
+              }`}
+              onPlaying={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+            />
+          </>
         ) : item.mediaType === "gif" ? (
           <img
             src={src}
@@ -151,7 +196,7 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
           />
         )}
         <div
-          className={`portfolio-overlay absolute inset-0 flex flex-col bg-gradient-to-t from-ink via-ink/55 to-transparent p-6 transition duration-500 ${
+          className={`portfolio-overlay absolute inset-0 z-[2] flex flex-col bg-gradient-to-t from-ink via-ink/55 to-transparent p-6 transition duration-500 ${
             expanded
               ? "justify-between overflow-hidden bg-ink/92 from-ink via-ink/95 to-ink/85"
               : "justify-end"
@@ -194,14 +239,19 @@ export function PortfolioCard({ item }: { item: PortfolioItem }) {
             </button>
           )}
         </div>
-        {item.mediaType === "video" && !playing && !showOverlay && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-cream/30 bg-ink/50 backdrop-blur-sm">
+        {isVideo && !playing && !showOverlay && (
+          <button
+            type="button"
+            onClick={handlePlayClick}
+            className="absolute inset-0 z-[3] flex items-center justify-center"
+            aria-label={`Воспроизвести ${item.title}`}
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-cream/30 bg-ink/50 backdrop-blur-sm transition group-hover:scale-105 group-hover:border-gold/40">
               <svg className="ml-1 h-5 w-5 text-cream" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
-            </div>
-          </div>
+            </span>
+          </button>
         )}
       </div>
     </article>

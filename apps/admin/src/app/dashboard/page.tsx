@@ -75,11 +75,18 @@ export default function DashboardPage() {
               className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center"
             >
               <div className="h-24 w-20 shrink-0 overflow-hidden rounded bg-bg">
-                {item.mediaType === "video" ? (
+                {item.mediaType === "video" && item.thumbnailUrl ? (
+                  <img
+                    src={mediaSrc(item.thumbnailUrl)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : item.mediaType === "video" ? (
                   <video
                     src={mediaSrc(item.mediaUrl)}
                     className="h-full w-full object-cover"
                     muted
+                    preload="metadata"
                   />
                 ) : (
                   <img
@@ -100,6 +107,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-sm text-muted">
                   {item.category} · {item.mediaType} · порядок {item.sortOrder}
+                  {item.mediaType === "video" && !item.thumbnailUrl && " · без превью"}
                 </p>
               </div>
               <div className="flex gap-2">
