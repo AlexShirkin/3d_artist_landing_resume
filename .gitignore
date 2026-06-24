@@ -4,5 +4,7 @@ dist
 .env
 .env.local
 uploads
+backups/*
+!backups/.gitkeep
 *.log
 .DS_Store
