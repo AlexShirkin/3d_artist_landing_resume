@@ -28,11 +28,12 @@ usage() {
 Создаёт резервную копию данных из Docker volumes.
 
 Использование:
-  ./infra/backup.sh [all|db|uploads]
+  ./infra/backup.sh [all|db|uploads|certs]
 
-  all      — дамп БД + архив медиа (по умолчанию)
+  all      — дамп БД + медиа + SSL-сертификаты (по умолчанию)
   db       — только PostgreSQL
   uploads  — только volume uploads_data (видео, фото, превью)
+  certs    — только volume certbot_certs (Let's Encrypt)
 
 Переменные окружения:
   BACKUP_DIR             — каталог для архивов (по умолчанию ./backups)
@@ -84,13 +85,33 @@ backup_uploads() {
 
   echo "→ Архив медиа (${volume}) → ${outfile}"
 
-  docker run --rm \
-    -v "${volume}:/data:ro" \
-    alpine:3.20 \
-    tar czf - -C /data . >"$outfile"
+  archive_volume "$volume" "$outfile"
 
   ln -sfn "$(basename "$outfile")" "$BACKUP_DIR/uploads-latest.tar.gz"
   echo "✓ Медиа сохранены ($(du -h "$outfile" | awk '{print $1}'))"
+}
+
+backup_certs() {
+  local required="${1:-0}"
+  local volume outfile
+
+  if ! volume="$(resolve_compose_volume_optional certbot_certs)"; then
+    if [[ "$required" == "1" ]]; then
+      resolve_compose_volume certbot_certs >/dev/null
+    fi
+    echo "→ SSL: volume certbot_certs не найден, пропуск"
+    return
+  fi
+
+  mkdir -p "$BACKUP_DIR"
+  outfile="$BACKUP_DIR/certs-${STAMP}.tar.gz"
+
+  echo "→ Архив SSL (${volume}) → ${outfile}"
+
+  archive_volume "$volume" "$outfile"
+
+  ln -sfn "$(basename "$outfile")" "$BACKUP_DIR/certs-latest.tar.gz"
+  echo "✓ Сертификаты сохранены ($(du -h "$outfile" | awk '{print $1}'))"
 }
 
 prune_old_backups() {
@@ -99,7 +120,7 @@ prune_old_backups() {
   fi
 
   echo "→ Удаление архивов старше ${RETENTION_DAYS} дн."
-  find "$BACKUP_DIR" -maxdepth 1 -type f \( -name 'db-*.sql.gz' -o -name 'uploads-*.tar.gz' \) \
+  find "$BACKUP_DIR" -maxdepth 1 -type f \( -name 'db-*.sql.gz' -o -name 'uploads-*.tar.gz' -o -name 'certs-*.tar.gz' \) \
     -mtime "+${RETENTION_DAYS}" -delete
 }
 
@@ -107,11 +128,13 @@ case "$MODE" in
   all)
     backup_db
     backup_uploads
+    backup_certs
     prune_old_backups
     echo ""
     echo "Готово. Файлы в ${BACKUP_DIR}/"
     echo "  db-latest.sql.gz"
     echo "  uploads-latest.tar.gz"
+    echo "  certs-latest.tar.gz"
     ;;
   db)
     backup_db
@@ -119,6 +142,10 @@ case "$MODE" in
     ;;
   uploads)
     backup_uploads
+    prune_old_backups
+    ;;
+  certs)
+    backup_certs 1
     prune_old_backups
     ;;
   -h | --help | help)
