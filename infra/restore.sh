@@ -13,6 +13,9 @@ compose() {
   docker compose "${COMPOSE_FILES[@]}" "$@"
 }
 
+# shellcheck source=compose-env.sh
+source "$(dirname "$0")/compose-env.sh"
+
 DB_USER="${POSTGRES_USER:-cloth}"
 DB_NAME="${POSTGRES_DB:-cloth_portfolio}"
 FORCE="${FORCE:-0}"
@@ -73,24 +76,7 @@ require_postgres() {
 }
 
 resolve_uploads_volume() {
-  local project volume
-  project="$(compose config --format '{{.Name}}')"
-  volume="$(docker volume ls \
-    --filter "label=com.docker.compose.project=${project}" \
-    --filter "label=com.docker.compose.volume=uploads_data" \
-    --format '{{.Name}}' | head -1)"
-
-  if [[ -z "$volume" ]]; then
-    volume="${UPLOADS_VOLUME:-${project}_uploads_data}"
-  fi
-
-  if ! docker volume inspect "$volume" >/dev/null 2>&1; then
-    echo "Ошибка: volume uploads_data не найден (${volume})." >&2
-    echo "Сначала поднимите стек: docker compose up -d" >&2
-    exit 1
-  fi
-
-  echo "$volume"
+  resolve_compose_volume uploads_data
 }
 
 restore_db() {
