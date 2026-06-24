@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 declare global {
   interface Window {
@@ -14,9 +14,16 @@ function MetrikaTracker({ counterId }: { counterId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const numericId = Number(counterId);
+  const isFirstHit = useRef(true);
 
   useEffect(() => {
     if (!Number.isFinite(numericId) || typeof window.ym !== "function") return;
+
+    // Первый просмотр отправляет init; hit — только при клиентской навигации
+    if (isFirstHit.current) {
+      isFirstHit.current = false;
+      return;
+    }
 
     const query = searchParams.toString();
     const url = query ? `${pathname}?${query}` : pathname;

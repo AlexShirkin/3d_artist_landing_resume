@@ -205,11 +205,19 @@ YM_COUNTER_ID=12345678
 
 Без этой переменной счётчик не подключается — удобно для форков репозитория и локальной разработки.
 
-После изменения `.env` пересоберите `web`:
+После изменения `.env` перезапустите `web` (пересборка не обязательна, если меняли только env):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build web
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
 ```
+
+Проверка на сервере, что ID дошёл до контейнера:
+
+```bash
+docker compose exec web printenv YM_COUNTER_ID
+```
+
+В браузере: DevTools → Network → фильтр `metrika` или `mc.yandex` — должен грузиться `tag.js`.
 
 ### Прочее
 

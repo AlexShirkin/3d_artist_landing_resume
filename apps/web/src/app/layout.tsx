@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description: "Портфолио опытного 3D-конструктора одежды: лекала, посадка, визуализация",
 };
 
+// Читать YM_COUNTER_ID из env контейнера при запросе, не при docker build
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
