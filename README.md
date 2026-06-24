@@ -179,9 +179,16 @@ chmod +x infra/init-letsencrypt.sh infra/renew-certs.sh
 
 ### Dozzle — логи контейнеров
 
-Веб-интерфейс для просмотра логов Docker в реальном времени. Доступ по паролю (`LOGS_USER` / `LOGS_PASSWORD` в `.env`).
+Веб-интерфейс для просмотра логов Docker в реальном времени. Вход через **логин Dozzle** (`LOGS_USER` / `LOGS_PASSWORD` в `.env`).
 
-**Уже работающий сервер** (в сертификате ещё нет `logs.`):
+**Первый запуск** — создать пользователя Dozzle:
+
+```bash
+chmod +x infra/setup-dozzle-auth.sh
+./infra/setup-dozzle-auth.sh
+```
+
+**Уже работающий сервер** (сертификат без `logs.`):
 
 ```bash
 # В .env на сервере:
@@ -195,7 +202,9 @@ chmod +x infra/expand-ssl-domains.sh
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build dozzle nginx
 ```
 
-Откройте `https://logs.ваш-домен` и войдите с `LOGS_USER` / `LOGS_PASSWORD`.
+Откройте `https://logs.ваш-домен` → форма входа Dozzle (email не нужен, только логин и пароль).
+
+Если снова просит логин без ошибки — пересоздайте пользователя: `./infra/setup-dozzle-auth.sh`
 
 ### 4. Обновление сертификата
 

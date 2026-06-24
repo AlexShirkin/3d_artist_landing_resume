@@ -9,11 +9,7 @@ mkdir -p /etc/nginx/conf.d
 export DOMAIN ADMIN_DOMAIN LOGS_DOMAIN="${LOGS_DOMAIN:-}"
 
 if [ -n "$LOGS_DOMAIN" ]; then
-  : "${LOGS_USER:?LOGS_USER is required when LOGS_DOMAIN is set}"
-  : "${LOGS_PASSWORD:?LOGS_PASSWORD is required when LOGS_DOMAIN is set}"
-  printf '%s:%s\n' "$LOGS_USER" "$(openssl passwd -apr1 "$LOGS_PASSWORD")" > /etc/nginx/.htpasswd
-  chmod 644 /etc/nginx/.htpasswd
-  echo "Logs UI enabled at https://${LOGS_DOMAIN}"
+  echo "Logs UI enabled at https://${LOGS_DOMAIN} (Dozzle login)"
 fi
 
 if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then

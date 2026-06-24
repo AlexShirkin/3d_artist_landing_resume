@@ -23,8 +23,6 @@ services:
       DOMAIN: ${DOMAIN}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN}
       LOGS_DOMAIN: ${LOGS_DOMAIN:-}
-      LOGS_USER: ${LOGS_USER:-}
-      LOGS_PASSWORD: ${LOGS_PASSWORD:-}
     volumes:
       - certbot_www:/var/www/certbot:ro
       - certbot_certs:/etc/letsencrypt:ro
@@ -38,9 +36,11 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dozzle_data:/data
     environment:
       DOZZLE_LEVEL: info
       DOZZLE_HOSTNAME: ${LOGS_DOMAIN:-logs}
+      DOZZLE_AUTH_PROVIDER: simple
 
   certbot:
     image: certbot/certbot:latest
@@ -53,3 +53,4 @@ services:
 volumes:
   certbot_www:
   certbot_certs:
+  dozzle_data:
