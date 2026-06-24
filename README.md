@@ -112,8 +112,12 @@ infra/init.sql           — схема БД
 infra/backup.sh          — бэкап БД, медиа и SSL
 infra/restore.sh         — восстановление из бэкапа
 infra/compose-env.sh     — поиск Docker volumes
+infra/deploy-services.map — карта путей → сервисы для CI/CD
+infra/detect-changed-services.sh — определение сервисов по diff
+infra/deploy-remote.sh      — деплой на сервере (git pull + build)
 infra/nginx/             — nginx reverse proxy (production)
 infra/init-letsencrypt.sh — первичная выдача SSL
+.github/workflows/deploy.yml — GitHub Actions
 ```
 
 ## Продакшен (nginx + HTTPS)
@@ -407,7 +411,11 @@ crontab -e -u deploy
 
 ## CI/CD (GitHub Actions)
 
-Деплой по push в `main` через SSH. Секреты: **Settings → Secrets and variables → Actions → Repository secrets** (не Environment).
+При push в `main` пересобираются **только затронутые** docker compose сервисы.
+
+### Секреты
+
+**Settings → Secrets and variables → Actions → Repository secrets**
 
 | Secret | Пример значения |
 |--------|-----------------|
@@ -416,11 +424,48 @@ crontab -e -u deploy
 | `SSH_KEY` | весь приватный ключ `deploy` (`pbcopy < ~/.ssh/deploy`) |
 | `DEPLOY_PATH` | `/opt/3d_artist_landing_resume` |
 
-Файл workflow: `.github/workflows/deploy.yml` (если добавлен в репозиторий).
+### Как работает
 
-Проверка вручную с Mac:
+1. `infra/detect-changed-services.sh` смотрит diff коммита
+2. Сверяет с картой `infra/deploy-services.map`
+3. По SSH запускает `infra/deploy-remote.sh` на сервере: `git pull` + `docker compose up -d --build <сервисы>`
+
+Примеры:
+
+| Изменили | Пересоберётся |
+|----------|---------------|
+| `apps/web/` | `web` |
+| `services/portfolio/` | `portfolio-service` |
+| `infra/nginx/` | `nginx` |
+| `docker-compose.prod.yml` | все сервисы из карты + `certbot` |
+| `packages/shared/` | `gateway`, `portfolio-service`, `auth-service` |
+| только `README.md` | ничего |
+
+`postgres` **не** пересобирается автоматически (данные в volume).
+
+### Добавить новый сервис
+
+1. Добавьте сервис в `docker-compose.yml` (и при необходимости `docker-compose.prod.yml`)
+2. Одна строка в `infra/deploy-services.map`:
+
+```
+log-service:services/logging
+```
+
+3. Push в `main` — CI подхватит сам.
+
+### Ручной деплой всех сервисов
+
+GitHub → **Actions** → **Deploy** → **Run workflow** → включить **Deploy all services**.
+
+### Проверка без Actions
 
 ```bash
+# локально: какие сервисы бы затронулись
+git diff --name-only HEAD~1 HEAD
+bash infra/detect-changed-services.sh
+
+# на сервере вручную
 ssh -i ~/.ssh/deploy deploy@SERVER \
-  'cd /opt/3d_artist_landing_resume && git pull origin main'
+  'cd /opt/3d_artist_landing_resume && USE_PROD_COMPOSE=1 ./infra/deploy-remote.sh web'
 ```

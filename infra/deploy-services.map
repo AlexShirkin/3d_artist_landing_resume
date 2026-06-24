@@ -1,0 +1,22 @@
+# Карта: какие пути → какой сервис docker compose пересобирать.
+# Новый сервис: добавьте строку  compose-service:path/to/code/
+#
+# Формат:
+#   service-name:path/prefix,another/prefix
+# Специальные правила (не трогать postgres — данные в volume):
+#   @compose:файлы — при изменении пересобрать все сервисы ниже + certbot
+#   @shared:path — при изменении пересобрать @shared-targets
+
+web:apps/web
+admin:apps/admin
+gateway:services/gateway
+portfolio-service:services/portfolio
+auth-service:services/auth
+nginx:infra/nginx
+
+@compose:docker-compose.yml,docker-compose.prod.yml
+@shared:packages/shared
+@shared-targets:gateway,portfolio-service,auth-service
+
+# Пример будущего сервиса логов (раскомментировать после добавления):
+# log-service:services/logging
