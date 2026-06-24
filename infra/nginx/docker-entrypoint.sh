@@ -6,15 +6,26 @@ set -e
 
 mkdir -p /etc/nginx/conf.d
 
-export DOMAIN ADMIN_DOMAIN
+export DOMAIN ADMIN_DOMAIN LOGS_DOMAIN="${LOGS_DOMAIN:-}"
+
+if [ -n "$LOGS_DOMAIN" ]; then
+  : "${LOGS_USER:?LOGS_USER is required when LOGS_DOMAIN is set}"
+  : "${LOGS_PASSWORD:?LOGS_PASSWORD is required when LOGS_DOMAIN is set}"
+  printf '%s:%s\n' "$LOGS_USER" "$(openssl passwd -apr1 "$LOGS_PASSWORD")" > /etc/nginx/.htpasswd
+  chmod 644 /etc/nginx/.htpasswd
+  echo "Logs UI enabled at https://${LOGS_DOMAIN}"
+fi
 
 if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   echo "SSL certificate found — enabling HTTPS"
-  envsubst '${DOMAIN} ${ADMIN_DOMAIN}' < /etc/nginx/templates/app-http-redirect.conf > /etc/nginx/conf.d/00-http.conf
+  envsubst '${DOMAIN} ${ADMIN_DOMAIN} ${LOGS_DOMAIN}' < /etc/nginx/templates/app-http-redirect.conf > /etc/nginx/conf.d/00-http.conf
   envsubst '${DOMAIN} ${ADMIN_DOMAIN}' < /etc/nginx/templates/app-ssl.conf > /etc/nginx/conf.d/10-ssl.conf
+  if [ -n "$LOGS_DOMAIN" ]; then
+    envsubst '${DOMAIN} ${LOGS_DOMAIN}' < /etc/nginx/templates/logs-ssl.conf > /etc/nginx/conf.d/20-logs-ssl.conf
+  fi
 else
   echo "No SSL certificate yet — HTTP bootstrap mode (ACME challenge only)"
-  envsubst '${DOMAIN} ${ADMIN_DOMAIN}' < /etc/nginx/templates/app-http-bootstrap.conf > /etc/nginx/conf.d/00-http.conf
+  envsubst '${DOMAIN} ${ADMIN_DOMAIN} ${LOGS_DOMAIN}' < /etc/nginx/templates/app-http-bootstrap.conf > /etc/nginx/conf.d/00-http.conf
 fi
 
 exec nginx -g 'daemon off;'

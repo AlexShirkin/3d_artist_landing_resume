@@ -14,6 +14,8 @@ portfolio-service:services/portfolio
 auth-service:services/auth
 nginx:infra/nginx
 
+# dozzle — публичный образ; перезапуск при изменении docker-compose.prod.yml (@compose)
+
 @compose:docker-compose.yml,docker-compose.prod.yml
 @shared:packages/shared
 @shared-targets:gateway,portfolio-service,auth-service

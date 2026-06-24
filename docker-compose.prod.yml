@@ -22,12 +22,25 @@ services:
     environment:
       DOMAIN: ${DOMAIN}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      LOGS_DOMAIN: ${LOGS_DOMAIN:-}
+      LOGS_USER: ${LOGS_USER:-}
+      LOGS_PASSWORD: ${LOGS_PASSWORD:-}
     volumes:
       - certbot_www:/var/www/certbot:ro
       - certbot_certs:/etc/letsencrypt:ro
     depends_on:
       - web
       - admin
+      - dozzle
+
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      DOZZLE_LEVEL: info
+      DOZZLE_HOSTNAME: ${LOGS_DOMAIN:-logs}
 
   certbot:
     image: certbot/certbot:latest

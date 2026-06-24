@@ -52,6 +52,13 @@ if [ -n "$SERVER_IP" ] && { [ "$DOMAIN_IP" != "$SERVER_IP" ] || [ "$ADMIN_IP" !=
   echo "WARNING: DNS may not point to this server yet. Certbot might fail or hang."
 fi
 
+CERT_DOMAINS=(-d "$DOMAIN" -d "$ADMIN_DOMAIN")
+if [ -n "${LOGS_DOMAIN:-}" ]; then
+  LOGS_IP=$(dig +short "$LOGS_DOMAIN" A | tail -1)
+  echo "  $LOGS_DOMAIN -> ${LOGS_IP:-not found}"
+  CERT_DOMAINS+=(-d "$LOGS_DOMAIN")
+fi
+
 $COMPOSE run --rm -T --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
   --non-interactive \
@@ -61,8 +68,7 @@ $COMPOSE run --rm -T --entrypoint certbot certbot certonly \
   --email "$CERTBOT_EMAIL" \
   --agree-tos \
   --no-eff-email \
-  -d "$DOMAIN" \
-  -d "$ADMIN_DOMAIN"
+  "${CERT_DOMAINS[@]}"
 
 echo "=== 3/4 Enabling HTTPS in nginx ==="
 $COMPOSE up -d --force-recreate nginx
@@ -74,6 +80,9 @@ echo ""
 echo "Done!"
 echo "  Landing: https://${DOMAIN}"
 echo "  Admin:   https://${ADMIN_DOMAIN}"
+if [ -n "${LOGS_DOMAIN:-}" ]; then
+  echo "  Logs:    https://${LOGS_DOMAIN}"
+fi
 echo ""
 echo "Add to crontab for certificate renewal (optional but recommended):"
 echo "  0 3 * * * $(pwd)/infra/renew-certs.sh >> /var/log/cloth-cert-renew.log 2>&1"

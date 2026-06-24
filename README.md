@@ -130,6 +130,7 @@ infra/init-letsencrypt.sh — первичная выдача SSL
 |--------|--------|
 | `DOMAIN` | `portfolio.example.com` → IP сервера |
 | `ADMIN_DOMAIN` | `admin.portfolio.example.com` → IP сервера |
+| `LOGS_DOMAIN` | `logs.portfolio.example.com` → IP сервера (Dozzle, опционально) |
 
 ### 2. Настройка `.env`
 
@@ -144,6 +145,9 @@ JWT_SECRET=длинная-случайная-строка
 ADMIN_PASSWORD=надёжный-пароль
 DOMAIN=portfolio.example.com
 ADMIN_DOMAIN=admin.portfolio.example.com
+LOGS_DOMAIN=logs.portfolio.example.com
+LOGS_USER=logs
+LOGS_PASSWORD=надёжный-пароль
 CERTBOT_EMAIL=you@example.com
 CERTBOT_STAGING=0
 ```
@@ -161,7 +165,7 @@ chmod +x infra/init-letsencrypt.sh infra/renew-certs.sh
 
 Скрипт:
 1. Поднимает все сервисы
-2. Запрашивает сертификат Let's Encrypt (оба домена в одном сертификате)
+2. Запрашивает сертификат Let's Encrypt (все домены из `.env`, включая `LOGS_DOMAIN`)
 3. Включает HTTPS в nginx
 4. Запускает автообновление сертификата
 
@@ -169,8 +173,29 @@ chmod +x infra/init-letsencrypt.sh infra/renew-certs.sh
 |--------|-----|
 | Лендинг | `https://ваш-домен` |
 | Админка | `https://admin.ваш-домен` |
+| Логи (Dozzle) | `https://logs.ваш-домен` — если задан `LOGS_DOMAIN` |
 
 Снаружи открыты только порты **80** и **443**. Порты 3000, 3003, 4000, 5432 закрыты.
+
+### Dozzle — логи контейнеров
+
+Веб-интерфейс для просмотра логов Docker в реальном времени. Доступ по паролю (`LOGS_USER` / `LOGS_PASSWORD` в `.env`).
+
+**Уже работающий сервер** (в сертификате ещё нет `logs.`):
+
+```bash
+# В .env на сервере:
+# LOGS_DOMAIN=logs.sdv3dmoda.ru
+# LOGS_USER=logs
+# LOGS_PASSWORD=надёжный-пароль
+
+chmod +x infra/expand-ssl-domains.sh
+./infra/expand-ssl-domains.sh
+
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build dozzle nginx
+```
+
+Откройте `https://logs.ваш-домен` и войдите с `LOGS_USER` / `LOGS_PASSWORD`.
 
 ### 4. Обновление сертификата
 
@@ -187,7 +212,8 @@ Certbot-контейнер проверяет продление каждые 12
     │
     ▼
   nginx ──► web:3000      (DOMAIN)
-         └──► admin:3000  (ADMIN_DOMAIN)
+         ├──► admin:3000  (ADMIN_DOMAIN)
+         └──► dozzle:8080 (LOGS_DOMAIN, basic auth)
 ```
 
 API (`/api/...`) и медиа (`/uploads/...`) проксируются через Next.js внутри Docker — отдельный домен для API не нужен.
