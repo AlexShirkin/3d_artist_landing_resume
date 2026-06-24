@@ -60,6 +60,7 @@ services:
       - "3000:3000"
     environment:
       API_URL: http://gateway:4000
+      YM_COUNTER_ID: ${YM_COUNTER_ID:-}
     depends_on:
       - gateway
 
