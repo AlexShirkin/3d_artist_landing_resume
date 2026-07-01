@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { PortfolioItem } from "@/lib/api";
 import { mediaSrc } from "@/lib/api";
@@ -12,20 +13,25 @@ interface HeroProps {
 }
 
 function HeroFeaturedMedia({ item }: { item: PortfolioItem }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const src = mediaSrc(item.mediaUrl);
   const posterSrc = item.thumbnailUrl ? mediaSrc(item.thumbnailUrl) : null;
   const isVideo = item.mediaType === "video";
 
+  useEffect(() => {
+    if (!isVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+    void video.play().catch(() => undefined);
+  }, [isVideo, src]);
+
   return (
-    <a
-      href="#work"
-      className="group relative ml-auto block aspect-[4/5] w-full max-w-md xl:max-w-lg"
-      aria-label={`Смотреть работу: ${item.title}`}
-    >
-      <div className="absolute inset-0 border border-cream/10 transition-colors group-hover:border-gold/25" />
+    <div className="relative ml-auto aspect-[4/5] w-full max-w-md xl:max-w-lg">
+      <div className="absolute inset-0 border border-cream/10" />
       <div className="absolute inset-4 overflow-hidden border border-gold/20 bg-ink-soft">
         {isVideo ? (
           <video
+            ref={videoRef}
             src={src}
             poster={posterSrc ?? undefined}
             autoPlay
@@ -33,27 +39,19 @@ function HeroFeaturedMedia({ item }: { item: PortfolioItem }) {
             loop
             playsInline
             preload="auto"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : (
           <img
             src={src}
             alt={item.title}
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+            className="h-full w-full object-contain"
           />
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 via-ink/30 to-transparent p-5">
-          <span className="block text-[10px] uppercase tracking-[0.25em] text-gold">
-            {item.category}
-          </span>
-          <span className="mt-1 block font-[family-name:var(--font-display)] text-xl text-cream">
-            {item.title}
-          </span>
-        </div>
       </div>
       <div className="pointer-events-none absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-gradient-to-r from-gold/50 to-transparent" />
       <div className="pointer-events-none absolute bottom-8 right-8 h-24 w-px bg-gradient-to-t from-gold/40 to-transparent" />
-    </a>
+    </div>
   );
 }
 
