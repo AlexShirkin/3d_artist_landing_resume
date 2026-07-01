@@ -12,10 +12,14 @@ async function proxy(
     GATEWAY
   );
 
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-  headers.delete("connection");
-  headers.delete("content-length");
+  const headers = new Headers();
+  const authorization = request.headers.get("authorization");
+  const contentType = request.headers.get("content-type");
+  const accept = request.headers.get("accept");
+
+  if (authorization) headers.set("authorization", authorization);
+  if (contentType) headers.set("content-type", contentType);
+  if (accept) headers.set("accept", accept);
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const body = hasBody ? await request.arrayBuffer() : undefined;
@@ -23,7 +27,8 @@ async function proxy(
   const res = await fetch(target, {
     method: request.method,
     headers,
-    body: body?.byteLength ? body : undefined,
+    body: hasBody ? body : undefined,
+    cache: "no-store",
   });
 
   return new NextResponse(res.body, {

@@ -74,8 +74,8 @@ export default function SettingsPage() {
         competencies: form.competencies.map((item) => item.trim()).filter(Boolean),
       });
       setMsg("Сохранено");
-    } catch {
-      setMsg("Ошибка");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Ошибка");
     } finally {
       setSaving(false);
     }

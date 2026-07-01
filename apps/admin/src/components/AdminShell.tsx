@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { clearToken, getToken } from "@/lib/api";
+import { clearToken, getToken, verifySession } from "@/lib/api";
 
 const nav = [
   { href: "/dashboard", label: "Работы" },
@@ -15,7 +15,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    void verifySession().then((valid) => {
+      if (!valid) {
+        clearToken();
+        router.replace("/login?expired=1");
+      }
+    });
   }, [router]);
 
   function logout() {

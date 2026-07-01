@@ -22,6 +22,31 @@ function authHeaders(json = false): HeadersInit {
   return headers;
 }
 
+function handleUnauthorized() {
+  clearToken();
+  if (typeof window !== "undefined") {
+    window.location.href = "/login?expired=1";
+  }
+}
+
+async function ensureOk(res: Response, fallbackMessage: string) {
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Сессия истекла — войдите снова");
+  }
+  if (!res.ok) throw new Error(fallbackMessage);
+}
+
+export async function verifySession(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  const res = await fetch(`${API_URL}/api/auth/verify`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return res.ok;
+}
+
 export async function login(email: string, password: string) {
   const res = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
@@ -77,7 +102,7 @@ export async function createItem(data: Partial<PortfolioItem> & { title: string;
       sortOrder: data.sortOrder ?? 0,
     }),
   });
-  if (!res.ok) throw new Error("Ошибка создания");
+  await ensureOk(res, "Ошибка создания");
   return res.json();
 }
 
@@ -96,7 +121,7 @@ export async function updateItem(id: string, data: Partial<PortfolioItem>) {
       sortOrder: data.sortOrder,
     }),
   });
-  if (!res.ok) throw new Error("Ошибка обновления");
+  await ensureOk(res, "Ошибка обновления");
   return res.json();
 }
 
@@ -105,7 +130,7 @@ export async function deleteItem(id: string) {
     method: "DELETE",
     headers: authHeaders(),
   });
-  if (!res.ok) throw new Error("Ошибка удаления");
+  await ensureOk(res, "Ошибка удаления");
 }
 
 export async function uploadFile(file: File): Promise<{ url: string }> {
@@ -117,7 +142,7 @@ export async function uploadFile(file: File): Promise<{ url: string }> {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   });
-  if (!res.ok) throw new Error("Ошибка загрузки файла");
+  await ensureOk(res, "Ошибка загрузки файла");
   return res.json();
 }
 
@@ -133,7 +158,7 @@ export async function updateSettings(data: Partial<SiteSettings>) {
     headers: authHeaders(true),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Ошибка сохранения настроек");
+  await ensureOk(res, "Ошибка сохранения настроек");
   return res.json();
 }
 
