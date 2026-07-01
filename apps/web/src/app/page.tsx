@@ -43,7 +43,6 @@ export default async function HomePage() {
       <Hero
         name={s.designerName}
         tagline={s.tagline}
-        years={s.yearsExperience}
         heroLabel={s.heroLabel}
       />
       <PortfolioGrid
@@ -57,11 +56,7 @@ export default async function HomePage() {
           title="Все проекты"
         />
       )}
-      <About
-        bio={s.bio}
-        years={s.yearsExperience}
-        competencies={s.competencies}
-      />
+      <About bio={s.bio} competencies={s.competencies} />
       <Contact
         email={s.email}
         telegram={s.telegram}

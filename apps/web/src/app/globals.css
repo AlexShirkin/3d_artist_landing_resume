@@ -38,8 +38,18 @@ body {
 
 .hero-glow {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--color-gold) 18%, transparent), transparent),
-    radial-gradient(ellipse 40% 30% at 90% 20%, color-mix(in srgb, var(--color-rose) 12%, transparent), transparent);
+    radial-gradient(ellipse 90% 60% at 50% 0%, color-mix(in srgb, var(--color-gold) 20%, transparent), transparent),
+    radial-gradient(ellipse 45% 35% at 95% 25%, color-mix(in srgb, var(--color-rose) 14%, transparent), transparent),
+    radial-gradient(ellipse 40% 30% at 5% 70%, color-mix(in srgb, var(--color-gold) 10%, transparent), transparent),
+    radial-gradient(ellipse 35% 25% at 75% 85%, color-mix(in srgb, var(--color-rose) 8%, transparent), transparent);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-cream) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-cream) 4%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 45%, black 20%, transparent 75%);
 }
 
 .portfolio-card:hover .portfolio-overlay,

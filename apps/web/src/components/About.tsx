@@ -1,10 +1,9 @@
 interface AboutProps {
   bio: string;
-  years: number;
   competencies: string[];
 }
 
-export function About({ bio, years, competencies }: AboutProps) {
+export function About({ bio, competencies }: AboutProps) {
   return (
     <section id="about" className="border-t border-cream/5 bg-ink-soft py-24 lg:py-32">
       <div className="mx-auto grid max-w-7xl gap-16 px-6 lg:grid-cols-2 lg:gap-24 lg:px-10">
@@ -15,7 +14,7 @@ export function About({ bio, years, competencies }: AboutProps) {
           </h2>
           <p className="mt-6 leading-relaxed text-cream-muted whitespace-pre-line">
             {bio ||
-              `Более ${years} лет в индустрии моды как 3D-конструктор одежды. Создаю точные цифровые модели, лекала и визуализации — от концепта до готового производственного пакета.`}
+              "Работаю в индустрии моды как 3D-конструктор одежды. Создаю точные цифровые модели, лекала и визуализации — от концепта до готового производственного пакета."}
           </p>
         </div>
         <div>
