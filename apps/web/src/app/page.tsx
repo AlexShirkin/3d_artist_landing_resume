@@ -36,6 +36,7 @@ export default async function HomePage() {
   };
 
   const showcase = featured.length > 0 ? featured : items;
+  const heroFeatured = featured[0] ?? null;
 
   return (
     <main>
@@ -44,6 +45,7 @@ export default async function HomePage() {
         name={s.designerName}
         tagline={s.tagline}
         heroLabel={s.heroLabel}
+        featuredItem={heroFeatured}
       />
       <PortfolioGrid
         items={showcase}

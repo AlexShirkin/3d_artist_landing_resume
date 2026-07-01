@@ -1,24 +1,64 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { PortfolioItem } from "@/lib/api";
+import { mediaSrc } from "@/lib/api";
 
 interface HeroProps {
   name: string;
   tagline: string;
   heroLabel: string;
+  featuredItem?: PortfolioItem | null;
 }
 
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+function HeroFeaturedMedia({ item }: { item: PortfolioItem }) {
+  const src = mediaSrc(item.mediaUrl);
+  const posterSrc = item.thumbnailUrl ? mediaSrc(item.thumbnailUrl) : null;
+  const isVideo = item.mediaType === "video";
+
+  return (
+    <a
+      href="#work"
+      className="group relative ml-auto block aspect-[4/5] w-full max-w-md xl:max-w-lg"
+      aria-label={`Смотреть работу: ${item.title}`}
+    >
+      <div className="absolute inset-0 border border-cream/10 transition-colors group-hover:border-gold/25" />
+      <div className="absolute inset-4 overflow-hidden border border-gold/20 bg-ink-soft">
+        {isVideo ? (
+          <video
+            src={src}
+            poster={posterSrc ?? undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <img
+            src={src}
+            alt={item.title}
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+          />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 via-ink/30 to-transparent p-5">
+          <span className="block text-[10px] uppercase tracking-[0.25em] text-gold">
+            {item.category}
+          </span>
+          <span className="mt-1 block font-[family-name:var(--font-display)] text-xl text-cream">
+            {item.title}
+          </span>
+        </div>
+      </div>
+      <div className="pointer-events-none absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-gradient-to-r from-gold/50 to-transparent" />
+      <div className="pointer-events-none absolute bottom-8 right-8 h-24 w-px bg-gradient-to-t from-gold/40 to-transparent" />
+    </a>
+  );
 }
 
-export function Hero({ name, tagline, heroLabel }: HeroProps) {
-  const initials = getInitials(name);
+export function Hero({ name, tagline, heroLabel, featuredItem }: HeroProps) {
+  const hasFeatured = Boolean(featuredItem);
 
   return (
     <section className="hero-glow relative flex min-h-screen flex-col justify-center overflow-hidden py-28 pt-36 lg:py-32 lg:pt-40">
@@ -26,14 +66,13 @@ export function Hero({ name, tagline, heroLabel }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-b from-ink/30 via-transparent to-ink/80" />
 
       <div
-        aria-hidden
-        className="pointer-events-none absolute right-[-4%] top-1/2 hidden -translate-y-1/2 font-[family-name:var(--font-display)] text-[clamp(12rem,22vw,24rem)] font-light leading-none text-cream/[0.035] select-none lg:block xl:right-[2%]"
+        className={`relative mx-auto w-full max-w-7xl px-6 lg:px-10 ${
+          hasFeatured
+            ? "grid items-center gap-12 lg:grid-cols-12 lg:gap-16 xl:gap-20"
+            : "max-w-4xl"
+        }`}
       >
-        {initials}
-      </div>
-
-      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-6 lg:grid-cols-12 lg:gap-16 lg:px-10 xl:gap-20">
-        <div className="lg:col-span-7 xl:col-span-6">
+        <div className={hasFeatured ? "lg:col-span-7 xl:col-span-6" : ""}>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,25 +126,18 @@ export function Hero({ name, tagline, heroLabel }: HeroProps) {
           </motion.div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, delay: 0.35 }}
-          className="relative hidden lg:col-span-5 lg:block xl:col-span-6"
-        >
-          <div className="relative ml-auto aspect-[4/5] w-full max-w-md xl:max-w-lg">
-            <div className="absolute inset-0 border border-cream/10" />
-            <div className="absolute inset-4 border border-gold/20" />
-            <div className="absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-gradient-to-r from-gold/50 to-transparent" />
-            <div className="absolute bottom-8 right-8 h-24 w-px bg-gradient-to-t from-gold/40 to-transparent" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-[family-name:var(--font-display)] text-7xl italic text-gold/25 xl:text-8xl">
-                3D
-              </span>
-            </div>
-          </div>
-        </motion.div>
+        {featuredItem && (
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.35 }}
+            className="hidden lg:col-span-5 lg:block xl:col-span-6"
+          >
+            <HeroFeaturedMedia item={featuredItem} />
+          </motion.div>
+        )}
       </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
