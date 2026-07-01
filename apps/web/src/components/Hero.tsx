@@ -30,22 +30,32 @@ function HeroFeaturedMedia({ item }: { item: PortfolioItem }) {
       <div className="absolute inset-0 border border-cream/10" />
       <div className="absolute inset-4 overflow-hidden border border-gold/20 bg-ink-soft">
         {isVideo ? (
-          <video
-            ref={videoRef}
-            src={src}
-            poster={posterSrc ?? undefined}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="h-full w-full object-contain"
-          />
+          <>
+            {posterSrc && (
+              <img
+                src={posterSrc}
+                alt=""
+                aria-hidden
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+            <video
+              ref={videoRef}
+              src={src}
+              poster={posterSrc ?? undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </>
         ) : (
           <img
             src={src}
             alt={item.title}
-            className="h-full w-full object-contain"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         )}
       </div>
